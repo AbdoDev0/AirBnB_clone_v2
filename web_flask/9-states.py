@@ -1,50 +1,48 @@
 #!/usr/bin/python3
-'''A simple Flask web application.
-'''
+"""
+    Sript that starts a Flask web application
+"""
 from flask import Flask, render_template
-
 from models import storage
-from models.state import State
-
-
+import os
 app = Flask(__name__)
-'''The Flask application instance.'''
-app.url_map.strict_slashes = False
-
-
-@app.route('/states')
-@app.route('/states/<id>')
-def states(id=None):
-    '''The states page.'''
-    states = None
-    state = None
-    all_states = list(storage.all(State).values())
-    case = 404
-    if id is not None:
-        res = list(filter(lambda x: x.id == id, all_states))
-        if len(res) > 0:
-            state = res[0]
-            state.cities.sort(key=lambda x: x.name)
-            case = 2
-    else:
-        states = all_states
-        for state in states:
-            state.cities.sort(key=lambda x: x.name)
-        states.sort(key=lambda x: x.name)
-        case = 1
-    ctxt = {
-        'states': states,
-        'state': state,
-        'case': case
-    }
-    return render_template('9-states.html', **ctxt)
 
 
 @app.teardown_appcontext
-def flask_teardown(exc):
-    '''The Flask app/request context end event listener.'''
+def handle_teardown(self):
+    """
+        method to handle teardown
+    """
     storage.close()
 
 
+@app.route('/states', strict_slashes=False)
+def state_list():
+    """
+        method to render states
+    """
+    states = storage.all('State').values()
+    return render_template(
+        "9-states.html",
+        states=states,
+        condition="states_list")
+
+
+@app.route('/states/<id>', strict_slashes=False)
+def states_id(id):
+    """
+        method to render state ids
+    """
+    state_all = storage.all('State')
+    try:
+        state_id = state_all[id]
+        return render_template(
+            '9-states.html',
+            state_id=state_id,
+            condition="state_id")
+    except:
+        return render_template('9-states.html', condition="not_found")
+
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port='5000')
+    app.run(host='0.0.0.0', port=5000)
